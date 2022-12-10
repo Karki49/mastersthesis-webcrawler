@@ -1,0 +1,13 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+
+[dev-packages]
+faker = "==15.3.4"
+ipdb = "*"
+
+[requires]
+python_version = "3.9"
