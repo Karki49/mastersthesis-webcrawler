@@ -4,9 +4,11 @@
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 import random
 
+import ipdb
 import scrapy
 from scrapy import signals
 from faker import Faker
+from w3lib.http import basic_auth_header
 
 
 def create_user_agents():
@@ -31,6 +33,10 @@ def create_user_agents():
 
 
 FAKE_USER_AGENTS_POOL = create_user_agents()
+
+DEFAULT_REQUEST_META = {
+            'proxy' : 'https://'
+        }
 
 
 class CrawlerappSpiderMiddleware:
@@ -93,7 +99,14 @@ class CrawlerappDownloaderMiddleware:
         return s
 
     def process_request(self, request, spider):
-        request.headers[b'User-Agent'] = random.choice(FAKE_USER_AGENTS_POOL).encode('utf-8')
+        #### Uncomment the following
+        # request.headers[b'User-Agent'] = random.choice(FAKE_USER_AGENTS_POOL).encode('utf-8')
+        # request.meta.update(DEFAULT_REQUEST_META) # no need to use encoding
+        # proxy_auth = basic_auth_header('usernamee', 'passwordssss')
+        # request.headers[b'Proxy-Authorization'] = proxy_auth
+
+
+
         # Called for each request that goes through the downloader
         # middleware.
 
