@@ -2,11 +2,35 @@
 #
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+import random
 
+import scrapy
 from scrapy import signals
+from faker import Faker
 
-# useful for handling different item types with a single interface
-from itemadapter import is_item, ItemAdapter
+
+def create_user_agents():
+    target_size = 200
+    bucket_size = target_size//3
+    fake = Faker(0)
+    chrome_agents = [fake.chrome(version_from = 66, version_to= 120, build_from = 800, build_to = 899)  for i in range(bucket_size)]
+    ff_agents = [fake.firefox() for i in range(bucket_size)]
+    safari_agents = [fake.safari() for i in range(bucket_size)]
+    agents = list()
+    for agent in set(chrome_agents + ff_agents + safari_agents):
+        ua = agent
+        if 'Mobile' in ua:
+            continue
+        if 'Android' in ua:
+            continue
+        agents.append(ua)
+    assert(len(agents) >= 40)
+    random.shuffle(agents)
+    random.shuffle(agents)
+    return agents[:target_size]
+
+
+FAKE_USER_AGENTS_POOL = create_user_agents()
 
 
 class CrawlerappSpiderMiddleware:
@@ -69,7 +93,7 @@ class CrawlerappDownloaderMiddleware:
         return s
 
     def process_request(self, request, spider):
-
+        request.headers[b'User-Agent'] = random.choice(FAKE_USER_AGENTS_POOL).encode('utf-8')
         # Called for each request that goes through the downloader
         # middleware.
 
