@@ -96,3 +96,5 @@ env
 *.pick
 .config
 .idea/
+*.csv
+data/
