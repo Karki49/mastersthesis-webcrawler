@@ -64,3 +64,8 @@ if __name__ == '__main__':
     # generate_urls_and_write_to_file(hostname='cnn.com', batch_size=50000)
     # generate_urls_and_write_to_file(hostname='edition.cnn.com', batch_size=50000)
     # generate_urls_and_write_to_file(hostname='business.cnn.com', batch_size=50000)
+
+    # generate_urls_and_write_to_file(hostname='www.law360.com', batch_size=50000)
+    # generate_urls_and_write_to_file(hostname='law360.com', batch_size=50000)
+    # generate_urls_and_write_to_file(hostname='jobs.law360.com', batch_size=50000)
+    # generate_urls_and_write_to_file(hostname='us.law360.com', batch_size=50000)

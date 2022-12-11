@@ -162,6 +162,7 @@ class ResponseInterceptDownloaderMiddleware(CrawlerappDownloaderMiddleware):
         content_type = response.headers.get(b'Content-Type', b'')
         if content_type == b'text/html' or b'text/html' in content_type:
             request.method = 'GET'
+            request.dont_filter = True
             return request
 
         raise IgnoreRequest

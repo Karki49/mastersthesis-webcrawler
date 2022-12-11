@@ -17,7 +17,7 @@ NEWSPIDER_MODULE = 'crawlerapp.spiders'
 #USER_AGENT = 'crawlerapp (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 CONCURRENT_REQUESTS = 3
@@ -51,9 +51,20 @@ SPIDER_MIDDLEWARES = {
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-   # 'crawlerapp.middlewares.CrawlerappDownloaderMiddleware': 543,
-   'crawlerapp.middlewares.RequestInterceptDownloaderMiddleware': 1000,
-   'crawlerapp.middlewares.ResponseInterceptDownloaderMiddleware': 1001
+   'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 10,
+   'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 20,
+   'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 30,
+   'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+   'scrapy.downloadermiddlewares.retry.RetryMiddleware': 50,
+   'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware': 60,
+   'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 70,
+   'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 80,
+   'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': None,
+   'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': None,
+   'scrapy.downloadermiddlewares.stats.DownloaderStats': None,
+
+   'crawlerapp.middlewares.RequestInterceptDownloaderMiddleware': 201,
+   'crawlerapp.middlewares.ResponseInterceptDownloaderMiddleware': 202,
 }
 
 # Enable or disable extensions
