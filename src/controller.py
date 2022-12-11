@@ -16,3 +16,4 @@ if __name__ == '__main__':
     process = CrawlerProcess(settings=proj_settings)
     process.crawl(crawler_or_spidercls=TestSpider)
     process.start()
+    process.stop()

@@ -17,18 +17,18 @@ NEWSPIDER_MODULE = 'crawlerapp.spiders'
 #USER_AGENT = 'crawlerapp (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = False
+ROBOTSTXT_OBEY = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 8
+CONCURRENT_REQUESTS = 3
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
 #DOWNLOAD_DELAY = 2
 # The download delay setting will honor only one of:
-CONCURRENT_REQUESTS_PER_DOMAIN = 4
-CONCURRENT_REQUESTS_PER_IP = 4
+CONCURRENT_REQUESTS_PER_DOMAIN = 2
+CONCURRENT_REQUESTS_PER_IP = 2
 
 # Disable cookies (enabled by default)
 COOKIES_ENABLED = True
@@ -51,7 +51,9 @@ SPIDER_MIDDLEWARES = {
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-   'crawlerapp.middlewares.CrawlerappDownloaderMiddleware': 543,
+   # 'crawlerapp.middlewares.CrawlerappDownloaderMiddleware': 543,
+   'crawlerapp.middlewares.RequestInterceptDownloaderMiddleware': 1000,
+   'crawlerapp.middlewares.ResponseInterceptDownloaderMiddleware': 1001
 }
 
 # Enable or disable extensions
@@ -90,3 +92,5 @@ HTTPCACHE_ENABLED = False
 # Set settings whose default value is deprecated to a future-proof value
 REQUEST_FINGERPRINTER_IMPLEMENTATION = '2.7'
 TWISTED_REACTOR = 'twisted.internet.asyncioreactor.AsyncioSelectorReactor'
+
+DEPTH_LIMIT = 2

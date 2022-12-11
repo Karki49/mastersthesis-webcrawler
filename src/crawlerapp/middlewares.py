@@ -1,21 +1,18 @@
-# Define here the models for your spider middleware
-#
-# See documentation in:
-# https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 import random
 
-import ipdb
-import scrapy
-from scrapy import signals
 from faker import Faker
-from w3lib.http import basic_auth_header
+from scrapy import Request
+from scrapy import signals
+from scrapy.exceptions import IgnoreRequest
+from scrapy.http import Response
 
 
 def create_user_agents():
     target_size = 200
-    bucket_size = target_size//3
+    bucket_size = target_size // 3
     fake = Faker(0)
-    chrome_agents = [fake.chrome(version_from = 66, version_to= 120, build_from = 800, build_to = 899)  for i in range(bucket_size)]
+    chrome_agents = [fake.chrome(version_from=66, version_to=120, build_from=800, build_to=899) for i in
+                     range(bucket_size)]
     ff_agents = [fake.firefox() for i in range(bucket_size)]
     safari_agents = [fake.safari() for i in range(bucket_size)]
     agents = list()
@@ -26,7 +23,7 @@ def create_user_agents():
         if 'Android' in ua:
             continue
         agents.append(ua)
-    assert(len(agents) >= 40)
+    assert (len(agents) >= 40)
     random.shuffle(agents)
     random.shuffle(agents)
     return agents[:target_size]
@@ -35,8 +32,8 @@ def create_user_agents():
 FAKE_USER_AGENTS_POOL = create_user_agents()
 
 DEFAULT_REQUEST_META = {
-            'proxy' : 'https://'
-        }
+    'proxy': 'https://'
+}
 
 
 class CrawlerappSpiderMiddleware:
@@ -98,15 +95,7 @@ class CrawlerappDownloaderMiddleware:
         crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
         return s
 
-    def process_request(self, request, spider):
-        #### Uncomment the following
-        # request.headers[b'User-Agent'] = random.choice(FAKE_USER_AGENTS_POOL).encode('utf-8')
-        # request.meta.update(DEFAULT_REQUEST_META) # no need to use encoding
-        # proxy_auth = basic_auth_header('usernamee', 'passwordssss')
-        # request.headers[b'Proxy-Authorization'] = proxy_auth
-
-
-
+    def process_request(self, request: Request, spider):
         # Called for each request that goes through the downloader
         # middleware.
 
@@ -118,7 +107,7 @@ class CrawlerappDownloaderMiddleware:
         #   installed downloader middleware will be called
         return None
 
-    def process_response(self, request, response, spider):
+    def process_response(self, request: Request, response: Response, spider):
 
         # Called with the response returned from the downloader.
         # Must either;
@@ -127,7 +116,7 @@ class CrawlerappDownloaderMiddleware:
         # - or raise IgnoreRequest
         return response
 
-    def process_exception(self, request, exception, spider):
+    def process_exception(self, request: Request, exception, spider):
 
         # Called when a download handler or a process_request()
         # (from other downloader middleware) raises an exception.
@@ -140,3 +129,38 @@ class CrawlerappDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+
+class RequestInterceptDownloaderMiddleware(CrawlerappDownloaderMiddleware):
+
+    def process_request(self, request: Request, spider):
+        assert(request.method == 'GET')
+        #### Uncomment the following
+        request.headers[b'User-Agent'] = random.choice(FAKE_USER_AGENTS_POOL).encode('utf-8')
+        # request.meta.update(DEFAULT_REQUEST_META) # no need to use encoding
+        # proxy_auth = basic_auth_header('usernamee', 'passwordssss')
+        # request.headers[b'Proxy-Authorization'] = proxy_auth
+
+        if request.meta.get('_HEADER_REQUESTED_', False):
+            pass
+        else:
+            request.method = 'HEAD'
+            request.meta['_HEADER_REQUESTED_'] = True
+        return None
+
+class ResponseInterceptDownloaderMiddleware(CrawlerappDownloaderMiddleware):
+    def process_response(self, request: Request, response: Response, spider):
+        assert request.meta['_HEADER_REQUESTED_'] is not None
+        if request.method == 'GET':
+            return response
+
+        assert(request.method == 'HEAD')
+        if response.status >= 400:
+            raise IgnoreRequest
+
+        content_type = response.headers.get(b'Content-Type', b'')
+        if content_type == b'text/html' or b'text/html' in content_type:
+            request.method = 'GET'
+            return request
+
+        raise IgnoreRequest
