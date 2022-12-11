@@ -1,3 +1,5 @@
+__all__ = ['RequestInterceptDownloaderMiddleware', 'ResponseInterceptDownloaderMiddleware']
+
 import random
 
 from faker import Faker
@@ -108,7 +110,6 @@ class CrawlerappDownloaderMiddleware:
         return None
 
     def process_response(self, request: Request, response: Response, spider):
-
         # Called with the response returned from the downloader.
         # Must either;
         # - return a Response object
@@ -117,7 +118,6 @@ class CrawlerappDownloaderMiddleware:
         return response
 
     def process_exception(self, request: Request, exception, spider):
-
         # Called when a download handler or a process_request()
         # (from other downloader middleware) raises an exception.
 
@@ -134,7 +134,7 @@ class CrawlerappDownloaderMiddleware:
 class RequestInterceptDownloaderMiddleware(CrawlerappDownloaderMiddleware):
 
     def process_request(self, request: Request, spider):
-        assert(request.method == 'GET')
+        assert (request.method == 'GET')
         #### Uncomment the following
         request.headers[b'User-Agent'] = random.choice(FAKE_USER_AGENTS_POOL).encode('utf-8')
         # request.meta.update(DEFAULT_REQUEST_META) # no need to use encoding
@@ -148,13 +148,14 @@ class RequestInterceptDownloaderMiddleware(CrawlerappDownloaderMiddleware):
             request.meta['_HEADER_REQUESTED_'] = True
         return None
 
+
 class ResponseInterceptDownloaderMiddleware(CrawlerappDownloaderMiddleware):
     def process_response(self, request: Request, response: Response, spider):
         assert request.meta['_HEADER_REQUESTED_'] is not None
         if request.method == 'GET':
             return response
 
-        assert(request.method == 'HEAD')
+        assert (request.method == 'HEAD')
         if response.status >= 400:
             raise IgnoreRequest
 
