@@ -31,7 +31,7 @@ CONCURRENT_REQUESTS_PER_DOMAIN = 2
 CONCURRENT_REQUESTS_PER_IP = 2
 
 # Disable cookies (enabled by default)
-COOKIES_ENABLED = True
+COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 TELNETCONSOLE_ENABLED = False
@@ -44,27 +44,44 @@ TELNETCONSOLE_ENABLED = False
 
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+## This is the default spider middleware order
+# SPIDER_MIDDLEWARES = {
+#     'scrapy.spidermiddlewares.httperror.HttpErrorMiddleware': 50,
+#     'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': 500,
+#     'crawlerapp.middlewares.CrawlerappSpiderMiddleware': 543,
+#     'scrapy.spidermiddlewares.referer.RefererMiddleware': 700,
+#     'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware': 800,
+#     'scrapy.spidermiddlewares.depth.DepthMiddleware': 900,
+# }
+
 SPIDER_MIDDLEWARES = {
    'crawlerapp.middlewares.CrawlerappSpiderMiddleware': 543,
 }
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-DOWNLOADER_MIDDLEWARES = {
-   'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 10,
-   'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 20,
-   'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 30,
-   'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
-   'scrapy.downloadermiddlewares.retry.RetryMiddleware': 50,
-   'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware': 60,
-   'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 70,
-   'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 80,
-   'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': None,
-   'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': None,
-   'scrapy.downloadermiddlewares.stats.DownloaderStats': None,
+## This is the default downloader middleware order.
 
-   'crawlerapp.middlewares.RequestInterceptDownloaderMiddleware': 201,
-   'crawlerapp.middlewares.ResponseInterceptDownloaderMiddleware': 202,
+# {'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 300,
+#  'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
+#  'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 400,
+#  'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 500,
+#  'scrapy.downloadermiddlewares.retry.RetryMiddleware': 550,
+#  'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware': 580,
+#  'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 590,
+#  'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 600,
+#  'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': 700,
+#  'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 750,
+#  'scrapy.downloadermiddlewares.stats.DownloaderStats': 850
+#  }
+
+DOWNLOADER_MIDDLEWARES = {
+    'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': None,
+    'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': None,
+    'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': None,
+
+    'crawlerapp.middlewares.RequestInterceptDownloaderMiddleware': 1001,
+    'crawlerapp.middlewares.ResponseInterceptDownloaderMiddleware': 1002
 }
 
 # Enable or disable extensions
@@ -105,3 +122,6 @@ REQUEST_FINGERPRINTER_IMPLEMENTATION = '2.7'
 TWISTED_REACTOR = 'twisted.internet.asyncioreactor.AsyncioSelectorReactor'
 
 DEPTH_LIMIT = 2
+
+# scrapy.spidermiddlewares.urllength.UrlLengthMiddleware
+URLLENGTH_LIMIT = 300
