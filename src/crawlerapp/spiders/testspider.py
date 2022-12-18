@@ -4,18 +4,10 @@ import scrapy
 from scrapy import Request
 from scrapy.crawler import CrawlerProcess
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
-from scrapy.spidermiddlewares.referer import RefererMiddleware
 from scrapy.utils.project import get_project_settings
 
-
-def remove_pound(url: str) -> str:
-    assert (url)
-    return url.split('#')[0]
-
-
-def remove_query_and_pound(url: str) -> str:
-    url = remove_pound(url)
-    return url.split('?')[0]
+from crawlerapp.utility.urls import remove_fragments
+from crawlerapp.utility.urls import sanitize_url
 
 
 class SpiderSuperClass(scrapy.Spider):
@@ -66,13 +58,13 @@ class Law360Spider(SpiderSuperClass):
                       allow_domains=['law360.com'],
                       allow=[r'https://'],
                       deny=[r'\?', '^http:'],
-                      process_value=remove_pound)
+                      process_value=remove_fragments)
 
     scrape_lxml_link_extractor = LxmlLinkExtractor(
                       allow_domains=['law360.com'],
                       allow=[r'https://'],
                       deny=[r'\?', '^http:'],
-                      process_value=remove_query_and_pound)
+                      process_value=sanitize_url)
 
 if __name__ == '__main__':
     Law360Spider()

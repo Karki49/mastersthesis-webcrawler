@@ -5,6 +5,8 @@ name = "pypi"
 
 [packages]
 scrapy = "*"
+redis = "*"
+pymongo = "*"
 
 [dev-packages]
 faker = "==15.3.4"
