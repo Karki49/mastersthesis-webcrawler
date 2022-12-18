@@ -1,7 +1,8 @@
 import os.path
 import random
 from os.path import dirname
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit
+from urllib.parse import urlunsplit
 
 from faker import Faker
 
@@ -48,8 +49,12 @@ def generate_urls_and_write_to_file(hostname: str, batch_size: int):
                        slugs=['news', 'sports', 'health', 'politics'],
                        batch_size=batch_size)
 
+    words = hostname.split('.')
+    words.reverse()
+    reversed_hostname = '.'.join(words)
+
     write_to_file(urls,
-                  filename=f'{hostname}.urls',
+                  filename=f'{reversed_hostname}.urls',
                   file_mode='w')
 
 

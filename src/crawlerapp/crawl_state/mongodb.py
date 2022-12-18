@@ -1,4 +1,5 @@
 from datetime import datetime
+from hashlib import sha256
 from typing import Dict
 from urllib.parse import urlsplit
 
@@ -8,12 +9,25 @@ from crawlerapp.crawl_state.interfaces import UrlCrawlState
 
 
 class MongoUrlCrawlState(UrlCrawlState):
+    '''
+    use all-hostnames;
+    db['<domain>'].createIndex({"_id":1});
+    db['<domain>'].createIndex({"dt":1}, { expireAfterSeconds: 3600 });
+
+    Eg:
+    use all-hostnames;
+    db['nytimes.com'].createIndex({"_id":1});
+    db['nytimes.com'].createIndex({"dt":1}, { expireAfterSeconds: 3600 });
+
+    '''
 
     mongo_client: MongoClient = None
+    CONNECTION_URI: str = '...' #TODO complete this
 
     def __init__(self, sanitized_url: str):
         assert sanitized_url
         self.sanitized_url: str = sanitized_url
+        self.url_hash = sha256(self.sanitized_url.encode('utf-8')).hexdigest()
         self.db_client: MongoClient = self._create_connection()
         self.state: Dict = None
         self.__collection_name: str = None
@@ -30,15 +44,15 @@ class MongoUrlCrawlState(UrlCrawlState):
     @classmethod
     def _create_connection(cls) -> MongoClient:
         if cls.mongo_client is None:
-            cls.mongo_client = MongoClient(host='')
-        return cls.mongo_client
+            cls.mongo_client = MongoClient(cls.CONNECTION_URI)
+        return cls.mongo_client[cls.DB_NAME]
 
     def retrieve_crawl_state(self) -> None:
-        crawl_state = self.db_client[self.collection_name].find_one({"sanitized_url": self.sanitized_url})
+        crawl_state = self.db_client[self.collection_name].find_one({"_id": self.url_hash})
         if crawl_state:
             self.state = crawl_state
         else:
-            self.state = dict(url=self.sanitized_url, status=None, updated_on=None)
+            self.state = dict(_id=self.url_hash, url=self.sanitized_url, status=None, ttl_dt=None)
         return
 
     def is_url_seen(self) -> bool:
@@ -48,18 +62,14 @@ class MongoUrlCrawlState(UrlCrawlState):
         return self.state['status'] == self.PAGE_DOWNLOADED_FLAG
 
     def flag_seen(self) -> None:
-        self.state['status'] = self.SEEN_FLAG
-        self.db.set(name=self.sanitized_url, value=self.state, ex=self.SEEN_TIME_THRESHOLD)
+        new_state = self.state | dict(status=self.SEEN_FLAG, ttl_dt=datetime.utcnow())
+        self.db_client[self.collection_name].insert_one(new_state)
+        self.state['status'] = new_state
 
     def flag_url_page_downloaded(self) -> None:
-        self.state['status'] = self.PAGE_DOWNLOADED_FLAG
-        self.db.set(name=self.sanitized_url, value=self.state, ex=None)
+        new_state = self.state | dict(status=self.PAGE_DOWNLOADED_FLAG, ttl_dt=None)
+        self.db_client[self.collection_name].insert_one(new_state)
+        self.state['status'] = new_state
 
     def _url_seen_with_time_span(self):
-        if self.state['updated_on'] is None:
-            return True
-        t_now = datetime.utcnow()
-        if (t_now - self.state['updated_on']).total_seconds() <= self.SEEN_TIME_THRESHOLD:
-            return True
-        else:
-            return False
+        return True
