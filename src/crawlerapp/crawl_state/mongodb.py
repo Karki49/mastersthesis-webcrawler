@@ -9,10 +9,12 @@ from crawlerapp.crawl_state.interfaces import UrlCrawlState
 
 class MongoUrlCrawlState(UrlCrawlState):
 
+    mongo_client: MongoClient = None
+
     def __init__(self, sanitized_url: str):
         assert sanitized_url
         self.sanitized_url: str = sanitized_url
-        self.db_client: MongoClient = None
+        self.db_client: MongoClient = self._create_connection()
         self.state: Dict = None
         self.__collection_name: str = None
 
@@ -26,8 +28,10 @@ class MongoUrlCrawlState(UrlCrawlState):
         return self.__collection_name
 
     @classmethod
-    def _connect_to_db(cls) -> MongoClient:
-        raise Exception("i forgot to implement this!")
+    def _create_connection(cls) -> MongoClient:
+        if cls.mongo_client is None:
+            cls.mongo_client = MongoClient(host='')
+        return cls.mongo_client
 
     def retrieve_crawl_state(self) -> None:
         crawl_state = self.db_client[self.collection_name].find_one({"sanitized_url": self.sanitized_url})

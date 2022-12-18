@@ -14,7 +14,7 @@ class UrlCrawlState(ABC):
 
     @classmethod
     @abstractmethod
-    def _connect_to_db(cls) -> Any:
+    def _create_connection(cls) -> Any:
         raise Exception('Not Implemented')
 
     @abstractmethod
@@ -39,10 +39,6 @@ class UrlCrawlState(ABC):
 
     @abstractmethod
     def _url_seen_with_time_span(self):
-        raise Exception('Not Implemented')
-
-    @abstractmethod
-    def should_ignore(self) -> bool:
         raise Exception('Not Implemented')
 
     def should_ignore(self) -> bool:

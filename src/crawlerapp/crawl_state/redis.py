@@ -2,19 +2,31 @@ from typing import Any
 from typing import Dict
 
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
-from redis import Redis
+from redis import Redis, ConnectionPool
 
 
 class RedisUrlCrawlState(UrlCrawlState):
 
+    connection_pool: ConnectionPool = None
+
     def __init__(self, sanitized_url: str):
         self.url = sanitized_url
-        self.db: Redis = self._connect_to_db()
+        self.db: Redis = self._create_connection()
         self.state: Dict = None
 
     @classmethod
-    def _connect_to_db(cls) -> Any:
-        return None and Redis(host='', port='',username='', password='', decode_responses=True, db=0)
+    def _create_connection(cls) -> Any:
+        if cls.connection_pool is None:
+            #TODO complete the following
+            cls.connection_pool = ConnectionPool.from_url(url='redis://',
+                                                          max_connections=80)
+            # cls.connection_pool = ConnectionPool(max_connections=80,
+            #                                      host='',
+            #                                      port=0,
+            #                                      db=0,
+            #                                      username=None,
+            #                                      password=None)
+        return Redis(connection_pool=cls.connection_pool)
 
     def retrieve_crawl_state(self):
         state: Dict = self.db.get(self.url)
