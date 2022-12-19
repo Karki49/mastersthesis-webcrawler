@@ -13,6 +13,17 @@ scylla_session: Session = cluster.connect(keyspace=KEYSPACE, wait_for_all_pools=
 
 
 class ScyllaUrlCrawlState(UrlCrawlState):
+    """
+        create keyspace spc1 with
+            replication = {'class':'SimpleStrategy', 'replication_factor': 1} ;
+
+        create table IF NOT EXISTS spc1.alldomains(
+            url_hash varchar PRIMARY KEY,
+            status  tinyint,
+            url     varchar
+        );
+    """
+
     tablename = f'{KEYSPACE}.alldomains'
 
     def __init__(self, sanitized_url: str):

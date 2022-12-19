@@ -9,7 +9,7 @@ from crawlerapp.crawl_state.interfaces import UrlCrawlState
 
 
 class MongoUrlCrawlState(UrlCrawlState):
-    '''
+    """
     use all-hostnames;
     db['<domain>'].createIndex({"_id":1});
     db['<domain>'].createIndex({"dt":1}, { expireAfterSeconds: 3600 });
@@ -19,7 +19,7 @@ class MongoUrlCrawlState(UrlCrawlState):
     db['nytimes.com'].createIndex({"_id":1});
     db['nytimes.com'].createIndex({"dt":1}, { expireAfterSeconds: 3600 });
 
-    '''
+    """
 
     mongo_client: MongoClient = None
     CONNECTION_URI: str = '...' #TODO complete this
