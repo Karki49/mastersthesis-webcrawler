@@ -56,7 +56,7 @@ class MongoUrlCrawlState(UrlCrawlState):
         return
 
     def is_url_seen(self) -> bool:
-        return self.state['status'] == self.SEEN_FLAG
+        return self.state['status'] >= self.SEEN_FLAG
 
     def is_url_page_downloaded(self) -> bool:
         return self.state['status'] == self.PAGE_DOWNLOADED_FLAG

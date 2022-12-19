@@ -8,6 +8,7 @@ scrapy = "*"
 redis = "*"
 pymongo = "*"
 gevent = "*"
+scylla-driver = "*"
 
 [dev-packages]
 faker = "==15.3.4"
