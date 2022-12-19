@@ -9,27 +9,34 @@ from hashlib import sha256
 
 class RedisUrlCrawlState(UrlCrawlState):
 
+
     connection_pool: ConnectionPool = None
 
     def __init__(self, sanitized_url: str):
         self.url = sanitized_url
         self.url_hash = sha256(self.url.encode('utf-8')).hexdigest()
-        self.db: Redis = self._create_connection()
+        self.db: Redis = self._create_db_session()
         self.state: Dict = None
 
     @classmethod
-    def _create_connection(cls) -> Any:
-        if cls.connection_pool is None:
-            #TODO complete the following
-            cls.connection_pool = ConnectionPool.from_url(url='redis://localhost:6379/1',
-                                                          max_connections=80)
-            # cls.connection_pool = ConnectionPool(max_connections=80,
-            #                                      host='',
-            #                                      port=0,
-            #                                      db=0,
-            #                                      username=None,
-            #                                      password=None)
-        return Redis(connection_pool=cls.connection_pool)
+    def initialize_db_connection(cls) -> None:
+        # TODO complete the following
+        cls.connection_pool = ConnectionPool.from_url(url='redis://localhost:6379/1',
+                                                      max_connections=80)
+        # cls.connection_pool = ConnectionPool(max_connections=80,
+        #                                      host='',
+        #                                      port=0,
+        #                                      db=0,
+        #                                      username=None,
+        #                                      password=None)
+
+    @classmethod
+    def close_db_connection(cls) -> None:
+        if cls.connection_pool:
+            cls.connection_pool.disconnect()
+
+    def _create_db_session(self) -> Redis:
+        return Redis(connection_pool=self.connection_pool)
 
     def retrieve_crawl_state(self):
         state_json: str = self.db.get(self.url_hash)
@@ -54,4 +61,3 @@ class RedisUrlCrawlState(UrlCrawlState):
 
     def _url_seen_with_time_span(self):
         return True
-

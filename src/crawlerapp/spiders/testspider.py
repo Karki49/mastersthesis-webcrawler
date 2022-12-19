@@ -4,6 +4,7 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
 from scrapy.utils.project import get_project_settings
 
+from crawlerapp.crawl_state.interfaces import UrlCrawlState
 from crawlerapp.crawl_state.mongodb import MongoUrlCrawlState
 from crawlerapp.utility.urls import remove_fragments
 from crawlerapp.utility.urls import sanitize_url
@@ -19,6 +20,8 @@ class SpiderSuperClass(scrapy.Spider):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
         self.scrape_links_seen: set = set()
+        self.url_crawl_state__class: UrlCrawlState = kw['urlCrawlState__Class']
+        self.url_crawl_state__class.initialize_db_connection()
 
     def start_requests(self):
         for url in self.start_urls:
@@ -43,6 +46,14 @@ class SpiderSuperClass(scrapy.Spider):
 
         for link in self.scrape_lxml_link_extractor.extract_links(response=response):
             self._process_scraped_url(link.url)
+
+    @staticmethod
+    def close(spider, reason):
+        closed = getattr(spider, 'closed', None)
+        url_crawl_state__class: UrlCrawlState = spider.urlCrawlState__Class
+        url_crawl_state__class.close_db_connection()
+        if callable(closed):
+            return closed(reason)
 
 
 class Law360Spider(SpiderSuperClass):

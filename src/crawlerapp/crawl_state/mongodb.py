@@ -1,16 +1,20 @@
 from datetime import datetime
 from hashlib import sha256
+from typing import Any
 from typing import Dict
 from urllib.parse import urlsplit
 
 from pymongo import MongoClient
+from pymongo.database import Database
 
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
+
+MONGO_CLIENT = MongoClient('CONNECTION_URI')  # TODO complete this
 
 
 class MongoUrlCrawlState(UrlCrawlState):
     """
-    use all-hostnames;
+    use crawl_state_db;
     db['<domain>'].createIndex({"_id":1});
     db['<domain>'].createIndex({"dt":1}, { expireAfterSeconds: 3600 });
 
@@ -21,16 +25,29 @@ class MongoUrlCrawlState(UrlCrawlState):
 
     """
 
-    mongo_client: MongoClient = None
-    CONNECTION_URI: str = '...' #TODO complete this
+    mongo_database: Database = None
+    DB_NAME = 'crawl_state_db'
 
     def __init__(self, sanitized_url: str):
         assert sanitized_url
         self.sanitized_url: str = sanitized_url
         self.url_hash = sha256(self.sanitized_url.encode('utf-8')).hexdigest()
-        self.db_client: MongoClient = self._create_connection()
+        self.db_client: Database = self._create_db_session()
         self.state: Dict = None
         self.__collection_name: str = None
+
+    @classmethod
+    def initialize_db_connection(cls) -> None:
+        cls.mongo_client = MONGO_CLIENT[cls.DB_NAME]
+
+    @classmethod
+    def close_db_connection(cls) -> None:
+        assert cls.mongo_database
+        cls.mongo_database.client.close()
+
+    def _create_db_session(self) -> Database:
+        assert self.mongo_database
+        return self.mongo_database
 
     @property
     def collection_name(self) -> str:
@@ -40,12 +57,6 @@ class MongoUrlCrawlState(UrlCrawlState):
             assert hostname
             self.__collection_name = hostname
         return self.__collection_name
-
-    @classmethod
-    def _create_connection(cls) -> MongoClient:
-        if cls.mongo_client is None:
-            cls.mongo_client = MongoClient(cls.CONNECTION_URI)
-        return cls.mongo_client[cls.DB_NAME]
 
     def retrieve_crawl_state(self) -> None:
         crawl_state = self.db_client[self.collection_name].find_one({"_id": self.url_hash})

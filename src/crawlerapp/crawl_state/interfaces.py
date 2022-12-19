@@ -14,7 +14,16 @@ class UrlCrawlState(ABC):
 
     @classmethod
     @abstractmethod
-    def _create_connection(cls) -> Any:
+    def initialize_db_connection(cls) -> None:
+        raise Exception('Not Implemented')
+
+    @classmethod
+    @abstractmethod
+    def close_db_connection(cls) -> None:
+        raise Exception('Not Implemented')
+
+    @abstractmethod
+    def _create_db_session(self) -> Any:
         raise Exception('Not Implemented')
 
     @abstractmethod

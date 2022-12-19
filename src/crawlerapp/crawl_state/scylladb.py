@@ -7,10 +7,8 @@ from cassandra.cluster import Session
 
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
 
-cluster = Cluster(['0.0.0.0'], port=55045)  # since this port is mapped to 9042 on docker.
-KEYSPACE = 'spc1'
-scylla_session: Session = cluster.connect(keyspace=KEYSPACE, wait_for_all_pools=True)
-
+# This does not initiate connection to cluster; just defines the connection.
+SCYLLA_CLUSTER = Cluster(['0.0.0.0'], port=55045)  # since this port is mapped to 9042 on docker.
 
 class ScyllaUrlCrawlState(UrlCrawlState):
     """
@@ -24,18 +22,29 @@ class ScyllaUrlCrawlState(UrlCrawlState):
         );
     """
 
+    KEYSPACE = 'spc1'
     tablename = f'{KEYSPACE}.alldomains'
+    scylla_session: Session = None
 
     def __init__(self, sanitized_url: str):
         assert sanitized_url
         self.sanitized_url: str = sanitized_url
         self.url_hash = sha256(self.sanitized_url.encode('utf-8')).hexdigest()
-        self.session: Session = scylla_session
+        self.session: Session = self._create_db_session()
         self.partial_state: Dict = None
 
     @classmethod
-    def _create_connection(cls) -> Any:
-        raise Exception("No need to implement this method.")
+    def initialize_db_connection(cls) -> None:
+        cls.scylla_session = SCYLLA_CLUSTER.connect(keyspace=cls.KEYSPACE, wait_for_all_pools=True)
+
+    def _create_db_session(self) -> Any:
+        assert self.scylla_session
+        return self.scylla_session
+
+    @classmethod
+    def close_db_connection(cls) -> None:
+        if cls.scylla_session:
+            cls.scylla_session.shutdown()
 
     def retrieve_crawl_state(self):
         query = f"select url_hash, status from {self.tablename} where url_hash='{self.url_hash}'"
