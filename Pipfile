@@ -9,6 +9,7 @@ redis = "*"
 pymongo = "*"
 gevent = "*"
 scylla-driver = "*"
+celery = "*"
 
 [dev-packages]
 faker = "==15.3.4"
