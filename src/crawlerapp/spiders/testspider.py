@@ -1,8 +1,6 @@
 import scrapy
 from scrapy import Request
-from scrapy.crawler import CrawlerProcess
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
-from scrapy.utils.project import get_project_settings
 
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
 from crawlerapp.crawl_state.mongodb import MongoUrlCrawlState
@@ -76,13 +74,11 @@ class Law360Spider(SpiderSuperClass):
         process_value=sanitize_url)
 
 
-if __name__ == '__main__':
-    Law360Spider()
-    exit(0)
-    c = CrawlerProcess(settings=get_project_settings())
-    # c = CrawlerProcess(settings=None)
+class SimpleTestSpider1(scrapy.Spider):
+    name = "simple_test_1"
+    start_urls = []
 
-    c.crawl(Law360Spider)
-    c.start()
-    print('xxx' * 25)
-    c.stop()
+    def start_requests(self):
+        self.log(message="==>>" * 20 + " Spider seed urls started")
+        for url in self.start_urls:
+            yield scrapy.Request(url=url, callback=self.parse)
