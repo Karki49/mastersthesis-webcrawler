@@ -3,10 +3,6 @@ from kombu import Queue
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
-app = Celery('celeryapp',
-             backend='rpc://',
-             broker='pyamqp://guest:guest@localhost//')
-
 q_args = {
     # 'x-message-ttl': 15000,
 }
@@ -15,7 +11,12 @@ kw = {
     'queue_arguments': q_args}
 
 crawl_job_q = Queue(name='crawl_job_q', **kw)
+results_q = Queue(name='results_backend_q', **kw)
 
+app = Celery('celeryapp',
+             # backend='rpc://',
+             backend=None,
+             broker='pyamqp://guest:guest@localhost//')
 
 # download_page_q = Queue(name='q6', **kw)
 # app.conf.task_queues = (
@@ -46,3 +47,4 @@ if __name__ == '__main__':
     # start_spider.delay(spider_name=Law360Spider.name)
 
     print("crawl tasks sent to queue")
+
