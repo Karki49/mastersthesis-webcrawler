@@ -98,3 +98,5 @@ env
 .idea/
 *.csv
 data/
+
+src/configs.ini
