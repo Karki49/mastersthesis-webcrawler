@@ -30,21 +30,19 @@ def test_function():
 
 
 @app.task(queue=crawl_job_q.name)
-def start_spider(spider_name: str):
+def start_spider(spider_name: str, url_crawl_state_classname:str):
     c = CrawlerProcess(settings=get_project_settings())
-    c.crawl(spider_name)
+    kw = {'urlCrawlState__Classname': url_crawl_state_classname}
+    c.crawl(spider_name, **kw)
     c.start()
     c.stop()
-    # print('===' * 20, 'simulate spider start...')
-    # import time
-    # time.sleep(3)
 
 
 if __name__ == '__main__':
-    from crawlerapp.spiders.testspider import SimpleTestSpider1
+    from crawlerapp.spiders.testspider import Law360Spider
 
-    start_spider.delay(spider_name=SimpleTestSpider1.name)
-    # start_spider.delay(spider_name=Law360Spider.name)
+    # start_spider.delay(spider_name=SimpleTestSpider1.name)
+    start_spider(spider_name=Law360Spider.name, url_crawl_state_classname='MongoUrlCrawlState')
 
     print("crawl tasks sent to queue")
 
