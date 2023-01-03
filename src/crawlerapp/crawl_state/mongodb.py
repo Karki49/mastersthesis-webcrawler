@@ -1,15 +1,15 @@
 from datetime import datetime
 from hashlib import sha256
-from typing import Any
 from typing import Dict
 from urllib.parse import urlsplit
 
 from pymongo import MongoClient
 from pymongo.database import Database
 
+import configs
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
 
-MONGO_CLIENT = MongoClient('CONNECTION_URI')  # TODO complete this
+MONGO_CLIENT = MongoClient(configs.CRAWL_STATE_BACKEND_MONGODB_URI)
 
 
 class MongoUrlCrawlState(UrlCrawlState):

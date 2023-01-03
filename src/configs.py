@@ -11,6 +11,7 @@ config.read(config_ini_path)
 CRAWL_STATE_BACKEND_REDIS_URI = config['redis']['CRAWL_STATE_DB_URI']
 CRAWL_STATE_BACKEND_MONGODB_URI = config['mongodb']['CRAWL_STATE_DB_URI']
 CRAWL_STATE_BACKEND_SCYLLADB_HOSTNAME_LIST = config['scylladb']['CRAWL_STATE_DB_HOSTS'].split(',')
+CRAWL_STATE_BACKEND_SCYLLADB_PORT = int(config['scylladb']['CRAWL_STATE_DB_PORT'])
 
 if __name__ == '__main__':
     print(CRAWL_STATE_BACKEND_REDIS_URI)

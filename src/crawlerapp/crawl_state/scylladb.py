@@ -5,11 +5,13 @@ from typing import Dict
 from cassandra.cluster import Cluster
 from cassandra.cluster import Session
 
-from crawlerapp import logger
+import configs
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
 
 # This does not initiate connection to cluster; just defines the connection.
-SCYLLA_CLUSTER = Cluster(['0.0.0.0'], port=9042)  # since this port is mapped to 9042 on docker.
+SCYLLA_CLUSTER = Cluster(configs.CRAWL_STATE_BACKEND_SCYLLADB_HOSTNAME_LIST,
+                         port=configs.CRAWL_STATE_BACKEND_SCYLLADB_PORT)  # since this port is mapped to 9042 on docker.
+
 
 class ScyllaUrlCrawlState(UrlCrawlState):
     """
@@ -52,7 +54,7 @@ class ScyllaUrlCrawlState(UrlCrawlState):
         result = self.session.execute(query)
         hash_v_status = dict(result)
         assert len(hash_v_status) <= 1
-        if len(hash_v_status)==0:
+        if len(hash_v_status) == 0:
             self.partial_state = dict()
         else:
             url_hash, status = hash_v_status.popitem()
