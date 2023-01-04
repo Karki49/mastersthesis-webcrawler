@@ -2,6 +2,8 @@ import json
 from typing import Any
 from typing import Dict
 
+from crawlerapp import Interval
+from crawlerapp import logger
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
 from redis import Redis, ConnectionPool
 from hashlib import sha256
@@ -39,25 +41,35 @@ class RedisUrlCrawlState(UrlCrawlState):
         return Redis(connection_pool=self.connection_pool)
 
     def retrieve_crawl_state(self):
-        state_json: str = self.db.get(self.url_hash)
+        with Interval() as dt:
+            state_json: str = self.db.get(self.url_hash)
+        logger.info(f'redis query miliseconds: {dt.milisecs}')
         if state_json:
             self.state = json.loads(state_json)
         else:
             self.state = dict(status=None, url=self.url)
 
     def is_url_seen(self) -> bool:
+        if self.state['status'] is None:
+            return False
         return self.state['status'] >= self.SEEN_FLAG
 
     def is_url_page_downloaded(self) -> bool:
+        if self.state['status'] is None:
+            return False
         return self.state['status'] == self.PAGE_DOWNLOADED_FLAG
 
     def flag_seen(self) -> None:
         self.state['status'] = self.SEEN_FLAG
-        self.db.set(name=self.url_hash, value=json.dumps(self.state), ex=self.SEEN_TIME_THRESHOLD)
+        with Interval() as dt:
+            self.db.set(name=self.url_hash, value=json.dumps(self.state), ex=self.SEEN_TIME_THRESHOLD)
+        logger.info(f'redis insert miliseconds: {dt.milisecs}')
 
     def flag_url_page_downloaded(self) -> None:
         self.state['status'] = self.PAGE_DOWNLOADED_FLAG
-        self.db.set(name=self.url_hash, value=json.dumps(self.state), ex=None)
+        with Interval() as dt:
+            self.db.set(name=self.url_hash, value=json.dumps(self.state), ex=None)
+        logger.info(f'redis insert miliseconds: {dt.milisecs}')
 
     def _url_seen_with_time_span(self):
         return True

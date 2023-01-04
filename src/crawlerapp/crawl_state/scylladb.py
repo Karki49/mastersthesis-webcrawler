@@ -6,6 +6,8 @@ from cassandra.cluster import Cluster
 from cassandra.cluster import Session
 
 import configs
+from crawlerapp import Interval
+from crawlerapp import logger
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
 
 # This does not initiate connection to cluster; just defines the connection.
@@ -51,7 +53,9 @@ class ScyllaUrlCrawlState(UrlCrawlState):
 
     def retrieve_crawl_state(self):
         query = f"select url_hash, status from {self.tablename} where url_hash='{self.url_hash}'"
-        result = self.session.execute(query)
+        with Interval() as dt:
+            result = self.session.execute(query)
+        logger.info(f'scylladb query miliseconds: {dt.milisecs}')
         hash_v_status = dict(result)
         assert len(hash_v_status) <= 1
         if len(hash_v_status) == 0:
@@ -82,14 +86,18 @@ class ScyllaUrlCrawlState(UrlCrawlState):
         if not self.partial_state:
             first_query = f"insert into {self.tablename}(url_hash, url) " \
                           f"VALUES ('{self.url_hash}', '{self.sanitized_url}');"
-            self.session.execute(first_query)
             second_query = f"update {self.tablename} using ttl {self.SEEN_TIME_THRESHOLD} " \
                            f"set status={self.SEEN_FLAG} where url_hash='{self.url_hash}';"
-            self.session.execute(second_query)
+            with Interval() as dt:
+                self.session.execute(first_query)
+                self.session.execute(second_query)
+            logger.info(f'scylladb double insert miliseconds: {dt.milisecs}')
         else:
             query = f"update {self.tablename} USING TTL {self.SEEN_TIME_THRESHOLD} " \
                     f"set status={self.SEEN_FLAG} where url_hash='{self.url_hash}';"
-            self.session.execute(query)
+            with Interval() as dt:
+                self.session.execute(query)
+            logger.info(f'scylladb single update miliseconds: {dt.milisecs}')
         self.partial_state['status'] = self.SEEN_FLAG
 
     def flag_url_page_downloaded(self) -> None:
