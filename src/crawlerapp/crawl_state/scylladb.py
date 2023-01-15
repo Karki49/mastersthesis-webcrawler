@@ -2,8 +2,10 @@ from hashlib import sha256
 from typing import Any
 from typing import Dict
 
+from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster
 from cassandra.cluster import Session
+from cassandra.query import BatchStatement
 
 import configs
 from crawlerapp import Interval
@@ -83,15 +85,17 @@ class ScyllaUrlCrawlState(UrlCrawlState):
             return True
 
     def flag_seen(self) -> None:
+        batch = BatchStatement(consistency_level=ConsistencyLevel.ANY)
         if not self.partial_state:
-            first_query = f"insert into {self.tablename}(url_hash, url) " \
+            first_statement = f"insert into {self.tablename}(url_hash, url) " \
                           f"VALUES ('{self.url_hash}', '{self.sanitized_url}');"
-            second_query = f"update {self.tablename} using ttl {self.SEEN_TIME_THRESHOLD} " \
+            second_statement = f"update {self.tablename} using ttl {self.SEEN_TIME_THRESHOLD} " \
                            f"set status={self.SEEN_FLAG} where url_hash='{self.url_hash}';"
+            batch.add(first_statement)
+            batch.add(second_statement)
             with Interval() as dt:
-                self.session.execute(first_query)
-                self.session.execute(second_query)
-            logger.info(f'scylladb double insert miliseconds: {dt.milisecs}')
+                self.session.execute(batch)
+            logger.info(f'scylladb insert miliseconds: {dt.milisecs}')
         else:
             query = f"update {self.tablename} USING TTL {self.SEEN_TIME_THRESHOLD} " \
                     f"set status={self.SEEN_FLAG} where url_hash='{self.url_hash}';"
