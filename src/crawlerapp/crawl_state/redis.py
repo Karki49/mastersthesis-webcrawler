@@ -43,7 +43,7 @@ class RedisUrlCrawlState(UrlCrawlState):
     def retrieve_crawl_state(self):
         with Interval() as dt:
             state_json: str = self.db.get(self.url_hash)
-        logger.info(f'redis query miliseconds: {dt.milisecs}')
+        logger.info(f'redis retrieve miliseconds: {dt.milisecs}')
         if state_json:
             self.state = json.loads(state_json)
         else:

@@ -52,17 +52,14 @@ class ScyllaUrlCrawlState(UrlCrawlState):
             cls.cluster.shutdown()
 
     def retrieve_crawl_state(self):
-        query = f"select url_hash, status from {self.tablename} where url_hash='{self.url_hash}'"
+        query = f"select status from {self.tablename} where url_hash='{self.url_hash}'"
         with Interval() as dt:
-            result = self.session.execute(query)
-        logger.info(f'scylladb query miliseconds: {dt.milisecs}')
-        hash_v_status = dict(result)
-        assert len(hash_v_status) <= 1
-        if len(hash_v_status) == 0:
+            one_row = self.session.execute(query).one()
+        logger.info(f'scylladb retrieve miliseconds: {dt.milisecs}')
+        if one_row is None:
             self.partial_state = dict()
         else:
-            url_hash, status = hash_v_status.popitem()
-            self.partial_state = dict(url_hash=url_hash, status=status)
+            self.partial_state = dict(url_hash=self.url_hash, status=one_row.status)
 
     def is_url_seen(self) -> bool:
         if len(self.partial_state) == 0:  # if dict empty
