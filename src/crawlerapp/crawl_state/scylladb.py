@@ -12,10 +12,6 @@ from crawlerapp import Interval
 from crawlerapp import logger
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
 
-# This does not initiate connection to cluster; just defines the connection.
-SCYLLA_CLUSTER = Cluster(configs.CRAWL_STATE_BACKEND_SCYLLADB_HOSTNAME_LIST,
-                         port=configs.CRAWL_STATE_BACKEND_SCYLLADB_PORT)  # since this port is mapped to 9042 on docker.
-
 
 class ScyllaUrlCrawlState(UrlCrawlState):
     """
@@ -29,9 +25,9 @@ class ScyllaUrlCrawlState(UrlCrawlState):
         );
     """
 
-    KEYSPACE = 'spc1'
-    tablename = f'{KEYSPACE}.alldomains'
-    scylla_session: Session = None
+    KEYSPACE: str = 'spc1'
+    tablename: str = 'alldomains'
+    cluster: Cluster = None
 
     def __init__(self, sanitized_url: str):
         assert sanitized_url
@@ -42,16 +38,18 @@ class ScyllaUrlCrawlState(UrlCrawlState):
 
     @classmethod
     def initialize_db_connection(cls) -> None:
-        cls.scylla_session = SCYLLA_CLUSTER.connect(keyspace=cls.KEYSPACE, wait_for_all_pools=True)
+        cls.cluster = Cluster(configs.CRAWL_STATE_BACKEND_SCYLLADB_HOSTNAME_LIST,
+                              port=configs.CRAWL_STATE_BACKEND_SCYLLADB_PORT)  # since this port is mapped to 9042 on docker.
 
     def _create_db_session(self) -> Any:
-        assert self.scylla_session
-        return self.scylla_session
+        assert self.cluster
+        sess = self.cluster.connect(keyspace=self.KEYSPACE, wait_for_all_pools=False)
+        return sess
 
     @classmethod
     def close_db_connection(cls) -> None:
-        if cls.scylla_session:
-            cls.scylla_session.shutdown()
+        if cls.cluster:
+            cls.cluster.shutdown()
 
     def retrieve_crawl_state(self):
         query = f"select url_hash, status from {self.tablename} where url_hash='{self.url_hash}'"
@@ -120,3 +118,4 @@ class ScyllaUrlCrawlState(UrlCrawlState):
         if self.partial_state.get('status', None) is None:
             return True
         return False
+
