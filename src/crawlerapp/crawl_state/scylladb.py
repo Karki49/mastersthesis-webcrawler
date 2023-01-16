@@ -34,7 +34,8 @@ class ScyllaUrlCrawlState(UrlCrawlState):
         self.sanitized_url: str = sanitized_url
         self.url_hash = sha256(self.sanitized_url.encode('utf-8')).hexdigest()
         self.session: Session = self._create_db_session()
-        self.partial_state: Dict = None
+        self.state: Dict = None
+        self.__is_state_in_db:bool = None
 
     @classmethod
     def initialize_db_connection(cls) -> None:
@@ -57,31 +58,37 @@ class ScyllaUrlCrawlState(UrlCrawlState):
             one_row = self.session.execute(query).one()
         logger.info(f'scylladb retrieve miliseconds: {dt.milisecs}')
         if one_row is None:
-            self.partial_state = dict()
+            self.state = dict(url_hash=self.url_hash, status=None, url=self.sanitized_url)
+            self.__is_state_in_db = False
         else:
-            self.partial_state = dict(url_hash=self.url_hash, status=one_row.status)
+            self.state = dict(url_hash=self.url_hash, status=one_row.status, url=self.sanitized_url)
+            self.__is_state_in_db = True
+
+    def _is_state_in_db(self) -> bool:
+        assert self.state
+        return self.__is_state_in_db is True
 
     def is_url_seen(self) -> bool:
-        if len(self.partial_state) == 0:  # if dict empty
+        if not self._is_state_in_db():
             return False
-        status = self.partial_state['status']
-        if status is None:
+        if self.state['status'] is None:
             return False
-        if status >= self.SEEN_FLAG:
+        if self.state['status'] >= self.SEEN_FLAG:
             return True
+        return False
 
     def is_url_page_downloaded(self) -> bool:
-        if len(self.partial_state) == 0:  # if dict empty
+        if not self._is_state_in_db():
             return False
-        status = self.partial_state['status']
-        if status is None:
+        if self.state['status'] is None:
             return False
-        if status >= self.PAGE_DOWNLOADED_FLAG:
+        if self.state['status'] >= self.PAGE_DOWNLOADED_FLAG:
             return True
+        return False
 
     def flag_seen(self) -> None:
         batch = BatchStatement(consistency_level=ConsistencyLevel.ANY)
-        if not self.partial_state:
+        if not self._is_state_in_db():
             first_statement = f"insert into {self.tablename}(url_hash, url) " \
                           f"VALUES ('{self.url_hash}', '{self.sanitized_url}');"
             second_statement = f"update {self.tablename} using ttl {self.SEEN_TIME_THRESHOLD} " \
@@ -96,23 +103,76 @@ class ScyllaUrlCrawlState(UrlCrawlState):
                     f"set status={self.SEEN_FLAG} where url_hash='{self.url_hash}';"
             with Interval() as dt:
                 self.session.execute(query)
-            logger.info(f'scylladb single update miliseconds: {dt.milisecs}')
-        self.partial_state['status'] = self.SEEN_FLAG
+            logger.info(f'scylladb update miliseconds: {dt.milisecs}')
+        self.state['status'] = self.SEEN_FLAG
+        self.__is_state_in_db = True
 
     def flag_url_page_downloaded(self) -> None:
-        if not self.partial_state:
+        if not self._is_state_in_db():
             query = f"insert into {self.tablename}(url_hash, status, url) " \
                     f"VALUES ('{self.url_hash}', {self.PAGE_DOWNLOADED_FLAG}, '{self.sanitized_url}'); "
+            with Interval() as dt:
+                self.session.execute(query)
+            logger.info(f'scylladb insert miliseconds: {dt.milisecs}')
         else:
             query = f"update {self.tablename} " \
                     f"set status={self.PAGE_DOWNLOADED_FLAG} where url_hash='{self.url_hash}';"
-        self.session.execute(query)
-        self.partial_state['status'] = self.PAGE_DOWNLOADED_FLAG
+            with Interval() as dt:
+                self.session.execute(query)
+            logger.info(f'scylladb update miliseconds: {dt.milisecs}')
+
+        self.state['status'] = self.PAGE_DOWNLOADED_FLAG
+        self.__is_state_in_db = True
 
     def _url_seen_with_time_span(self):
-        if len(self.partial_state) == 0:  # if dict empty
+        if not self.__is_state_in_db:
             return True
-        if self.partial_state.get('status', None) is None:
+        assert self.state
+        if self.state['status'] is None:
             return True
-        return False
+        else:
+            return False
 
+if __name__ == '__main__':
+    # tests
+    ttl_time = 3
+    ScyllaUrlCrawlState.SEEN_TIME_THRESHOLD = ttl_time
+    ScyllaUrlCrawlState.initialize_db_connection()
+
+    url = 'https://aayushkarki/path/1'
+    scb = ScyllaUrlCrawlState(sanitized_url=url)
+    scb.retrieve_crawl_state()
+    assert scb.is_url_seen() is False
+    assert scb.is_url_page_downloaded() is False
+
+    scb.flag_seen()
+    assert scb.is_url_seen() is True
+    print(scb.state)
+    assert scb.is_url_page_downloaded() is False
+
+    scb = ScyllaUrlCrawlState(sanitized_url=url)
+    scb.retrieve_crawl_state()
+    assert scb.is_url_seen() is True
+    assert scb.is_url_page_downloaded() is False
+
+    import time
+    scb = ScyllaUrlCrawlState(sanitized_url=url)
+    scb.retrieve_crawl_state()
+    assert scb.is_url_seen() is True
+    assert scb.state['status'] is not None
+    time.sleep(ttl_time+3)
+    scb.retrieve_crawl_state()
+    assert scb.is_url_seen() is False
+    assert scb.state['status'] is None
+
+    assert scb._url_seen_with_time_span() is True
+    assert scb.is_url_page_downloaded() is False
+
+    scb.flag_url_page_downloaded()
+    assert scb.is_url_seen() is True
+    assert scb.is_url_page_downloaded() is True
+
+    scb = ScyllaUrlCrawlState(sanitized_url=url)
+    scb.retrieve_crawl_state()
+    assert scb.is_url_page_downloaded() is True
+    assert scb.is_url_seen() is True
