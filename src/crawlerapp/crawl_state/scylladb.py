@@ -89,12 +89,9 @@ class ScyllaUrlCrawlState(UrlCrawlState):
     def flag_seen(self) -> None:
         batch = BatchStatement(consistency_level=ConsistencyLevel.ANY)
         if not self._is_state_in_db():
-            first_statement = f"insert into {self.tablename}(url_hash, url) " \
-                          f"VALUES ('{self.url_hash}', '{self.sanitized_url}');"
-            second_statement = f"update {self.tablename} using ttl {self.SEEN_TIME_THRESHOLD} " \
-                           f"set status={self.SEEN_FLAG} where url_hash='{self.url_hash}';"
+            first_statement = f"insert into {self.tablename}(url_hash, url, status) " \
+                          f"VALUES ('{self.url_hash}', '{self.sanitized_url}', {self.SEEN_FLAG}) USING TTL {self.SEEN_TIME_THRESHOLD};"
             batch.add(first_statement)
-            batch.add(second_statement)
             with Interval() as dt:
                 self.session.execute(batch)
             logger.info(f'scylladb insert miliseconds: {dt.milisecs}')
@@ -125,54 +122,65 @@ class ScyllaUrlCrawlState(UrlCrawlState):
         self.__is_state_in_db = True
 
     def _url_seen_with_time_span(self):
-        if not self.__is_state_in_db:
-            return True
-        assert self.state
-        if self.state['status'] is None:
-            return True
-        else:
-            return False
+        return True
+
 
 if __name__ == '__main__':
     # tests
     ttl_time = 3
+    cls = ScyllaUrlCrawlState
     ScyllaUrlCrawlState.SEEN_TIME_THRESHOLD = ttl_time
     ScyllaUrlCrawlState.initialize_db_connection()
 
     url = 'https://aayushkarki/path/1'
     scb = ScyllaUrlCrawlState(sanitized_url=url)
+    res = scb.session.execute(f"select count(1) from {cls.KEYSPACE}.{cls.tablename} where url_hash='{scb.url_hash}'")
+    if not list(res)[0].count == 0:
+        scb.session.execute(f"delete from {cls.KEYSPACE}.{cls.tablename} where url_hash='{scb.url_hash}'")
     scb.retrieve_crawl_state()
     assert scb.is_url_seen() is False
     assert scb.is_url_page_downloaded() is False
+    assert scb.should_ignore() is False
 
     scb.flag_seen()
     assert scb.is_url_seen() is True
-    print(scb.state)
     assert scb.is_url_page_downloaded() is False
+    assert scb.should_ignore() is True
 
     scb = ScyllaUrlCrawlState(sanitized_url=url)
     scb.retrieve_crawl_state()
     assert scb.is_url_seen() is True
     assert scb.is_url_page_downloaded() is False
+    assert scb.should_ignore() is True
 
     import time
     scb = ScyllaUrlCrawlState(sanitized_url=url)
     scb.retrieve_crawl_state()
     assert scb.is_url_seen() is True
     assert scb.state['status'] is not None
+    assert scb.should_ignore() is True
     time.sleep(ttl_time+3)
     scb.retrieve_crawl_state()
     assert scb.is_url_seen() is False
     assert scb.state['status'] is None
-
     assert scb._url_seen_with_time_span() is True
     assert scb.is_url_page_downloaded() is False
+    assert scb.should_ignore() is False
 
     scb.flag_url_page_downloaded()
     assert scb.is_url_seen() is True
     assert scb.is_url_page_downloaded() is True
+    assert scb.should_ignore() is True
 
+    time.sleep(ttl_time + 3)
+    scb.retrieve_crawl_state()
     scb = ScyllaUrlCrawlState(sanitized_url=url)
     scb.retrieve_crawl_state()
     assert scb.is_url_page_downloaded() is True
     assert scb.is_url_seen() is True
+    assert scb.should_ignore() is True
+
+    print("---cleaning up---")
+    cls = ScyllaUrlCrawlState
+    scb.session.execute(f"delete from {cls.KEYSPACE}.{cls.tablename} where url_hash='{scb.url_hash}'")
+    ScyllaUrlCrawlState.close_db_connection()
