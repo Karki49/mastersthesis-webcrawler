@@ -83,51 +83,27 @@ def write_data_to_mongodb():
     cl.close()
 
 def write_data_to_scylladb():
+    # TODO
+    from cassandra.cluster import Cluster, BatchStatement
+    from cassandra import ConsistencyLevel
+    print("cluster nodes hosts ", configs.CRAWL_STATE_BACKEND_SCYLLADB_HOSTNAME_LIST)
+    cluster = Cluster(configs.CRAWL_STATE_BACKEND_SCYLLADB_HOSTNAME_LIST, port=configs.CRAWL_STATE_BACKEND_SCYLLADB_PORT)
+    sess = cluster.connect('spc1')
+
+    insert_state = sess.prepare('INSERT INTO alldomains (url_hash,status,url) VALUES (?, ?, ?)')
     for path in source_urls_full_paths:
-        write_data_to_db(ScyllaUrlCrawlState, path)
+        print(path)
+        for triple_list in write_data_to_db(None, path, chunk_size=1000):
+            batch = BatchStatement(consistency_level=ConsistencyLevel.QUORUM)
+            for url_hash, status, url in triple_list:
+                batch.add(insert_state, (url_hash, status, url))
+            sess.execute(batch)
+    cluster.shutdown()
 
-def scylladb_test(fpath):
-    from cassandra.cluster import Cluster
-    cluster = Cluster(['0.0.0.0'], port=55045) # since this port is mapped to 9042 on docker.
-    session = cluster.connect(keyspace='spc1', wait_for_all_pools=True)
-    print(session.is_shutdown)
-    session.shutdown()
-    time.sleep(10)
-    print(session.is_shutdown)
-    cnt = 0
-    t1 = datetime.now()
-    with open(fpath, 'r') as f:
-        for line in f.readlines():
-            cnt += 1
-            if cnt % 103 > 0:
-                continue
-            url = line.rstrip()
-            url_hash = sha256(url.encode('utf-8')).hexdigest()
-
-            # statement = f"insert into spc1.alldomains(url_hash, first_seen, last_updated, status, url) VALUES ('{url_hash}', toTimestamp(now()), toTimestamp(now()), 1, '{url}');"
-            statement = f"select url_hash, status, url from spc1.alldomains where url_hash='{url_hash}'"
-
-            rows = session.execute(statement)
-
-            t1 = datetime.now()
-            # rows = session.execute(statement)
-            if cnt % 103 == 0:
-                t2 = datetime.now()
-                print(dict(rows))
-                print(f'cnt:{cnt}, time:{(t2 - t1).total_seconds()}s, count:{cnt}')
-
-    print(f'time:{(t2 - t1).total_seconds()}s, count:{cnt}')
-    return
 
 if __name__ == '__main__':
-    # source_urls_full_paths = [join(DEST_DIR, filename) for filename in source_url_filenames]
-    # print(os.listdir(DEST_DIR))
-    # exit(0)
-    # write_data_to_db(DBClass=RedisUrlCrawlState)
-
-    # path = join(DEST_DIR, 'com.nytimes.us.urls')
-    # for d in write_data_to_db(ScyllaUrlCrawlState, path):
-    #     print(d)
+    pass
 
     # write_data_to_redis()
-    write_data_to_mongodb()
+    # write_data_to_mongodb()
+    # write_data_to_scylladb()
