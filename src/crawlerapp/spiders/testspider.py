@@ -91,6 +91,67 @@ class Law360Spider(SpiderSuperClass):
         process_value=sanitize_url)
 
 
+class NYTimesSpider(SpiderSuperClass):
+    name = "nytimes"
+
+    start_urls = [
+        'https://www.nytimes.com/section/science',
+        'https://www.nytimes.com/section/business'
+    ]
+
+    crawl_lxml_link_extractor = LxmlLinkExtractor(
+        allow_domains=['nytimes.com'],
+        allow=['^https://.*/science/', '^https://.*/business/'],
+        deny=[r'\?', '^http:'],
+        process_value=remove_fragments)
+
+    scrape_lxml_link_extractor = LxmlLinkExtractor(
+        allow_domains=['nytimes.com'],
+        allow=[r'^https://.*/2023/\d\d/\d\d/science/', r'^https://.*/2022/\d\d/\d\d/business/'],
+        deny=[r'\?', '^http:'],
+        process_value=sanitize_url)
+
+
+class CnnSpider(SpiderSuperClass):
+    name = "cnn"
+
+    start_urls = [
+        'https://edition.cnn.com/world'
+    ]
+
+    crawl_lxml_link_extractor = LxmlLinkExtractor(
+        allow_domains=['cnn.com'],
+        allow=['^https://.*/world/'],
+        deny=[r'\?', '^http:'],
+        process_value=remove_fragments)
+
+    scrape_lxml_link_extractor = LxmlLinkExtractor(
+        allow_domains=['cnn.com'],
+        allow=[r'^https://.*/202\d/'],
+        deny=[r'\?', '^http:'],
+        process_value=sanitize_url)
+
+
+class RottenTomatoesSpider(SpiderSuperClass):
+    name = "rotten_tomatoes"
+
+    start_urls = [
+        'https://www.rottentomatoes.com/'
+    ]
+
+    crawl_lxml_link_extractor = LxmlLinkExtractor(
+        allow_domains=[r'^https://.*/m/', r'^https://.*/tv/', r'^https://.*/article/'],
+        allow=['^https://'],
+        deny=[r'\?', '^http:'],
+        process_value=remove_fragments)
+
+    scrape_lxml_link_extractor = LxmlLinkExtractor(
+        allow_domains=['rottentomatoes.com'],
+        allow=[r'^https://.*/m/', r'^https://.*/tv/', r'^https://.*/article/'],
+        deny=[r'\?', '^http:'],
+        process_value=sanitize_url)
+
+
 class SimpleTestSpider1(SpiderSuperClass):
     name = "simple_test_1"
     start_urls = []
