@@ -74,3 +74,8 @@ if __name__ == '__main__':
     # generate_urls_and_write_to_file(hostname='law360.com', batch_size=50000)
     # generate_urls_and_write_to_file(hostname='jobs.law360.com', batch_size=50000)
     # generate_urls_and_write_to_file(hostname='us.law360.com', batch_size=50000)
+
+    # generate_urls_and_write_to_file(hostname='www.rottentomatoes.com', batch_size=50000)
+    # generate_urls_and_write_to_file(hostname='editorial.rottentomatoes.com', batch_size=50000)
+    # generate_urls_and_write_to_file(hostname='rottentomatoes.com', batch_size=50000)
+    # generate_urls_and_write_to_file(hostname='career.rottentomatoes.com', batch_size=50000)
