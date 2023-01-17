@@ -1,12 +1,14 @@
 import json
-from typing import Any
+from hashlib import sha256
 from typing import Dict
 
+from redis import ConnectionPool
+from redis import Redis
+
+import configs
 from crawlerapp import Interval
 from crawlerapp import logger
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
-from redis import Redis, ConnectionPool
-from hashlib import sha256
 
 
 class RedisUrlCrawlState(UrlCrawlState):
@@ -23,14 +25,8 @@ class RedisUrlCrawlState(UrlCrawlState):
     @classmethod
     def initialize_db_connection(cls) -> None:
         # TODO complete the following
-        cls.connection_pool = ConnectionPool.from_url(url='redis://localhost:6379/1',
+        cls.connection_pool = ConnectionPool.from_url(url=configs.CRAWL_STATE_BACKEND_REDIS_URI,
                                                       max_connections=80)
-        # cls.connection_pool = ConnectionPool(max_connections=80,
-        #                                      host='',
-        #                                      port=0,
-        #                                      db=0,
-        #                                      username=None,
-        #                                      password=None)
 
     @classmethod
     def close_db_connection(cls) -> None:
@@ -73,3 +69,62 @@ class RedisUrlCrawlState(UrlCrawlState):
 
     def _url_seen_with_time_span(self):
         return True
+
+
+if __name__ == '__main__':
+    import time
+    uri = configs.CRAWL_STATE_BACKEND_REDIS_URI
+    uri = f'{uri[:-1]}1'
+    configs.CRAWL_STATE_BACKEND_REDIS_URI = uri
+
+    ttl_time = 2
+    cls = RedisUrlCrawlState
+    cls.SEEN_TIME_THRESHOLD = ttl_time
+    cls.initialize_db_connection()
+
+    url = 'https://aayushkarki/path/1'
+    scb = cls(sanitized_url=url)
+    scb.db.flushdb()
+    scb.retrieve_crawl_state()
+    assert scb.is_url_seen() is False
+    assert scb.is_url_page_downloaded() is False
+    assert scb.should_ignore() is False
+
+    scb.flag_seen()
+    assert scb.is_url_seen() is True
+    assert scb.is_url_page_downloaded() is False
+    assert scb.should_ignore() is True
+
+    scb = cls(sanitized_url=url)
+    scb.retrieve_crawl_state()
+    assert scb.is_url_seen() is True
+    assert scb.is_url_page_downloaded() is False
+    assert scb.should_ignore() is True
+
+    scb = cls(sanitized_url=url)
+    scb.retrieve_crawl_state()
+    assert scb.is_url_seen() is True
+    assert scb.state['status'] is not None
+    assert scb.should_ignore() is True
+    time.sleep(ttl_time+2)
+    scb.retrieve_crawl_state()
+    assert scb.is_url_seen() is False
+    assert scb.state['status'] is None
+    assert scb._url_seen_with_time_span() is True
+    assert scb.is_url_page_downloaded() is False
+    assert scb.should_ignore() is False
+    scb.flag_url_page_downloaded()
+    assert scb.is_url_seen() is True
+    assert scb.is_url_page_downloaded() is True
+    assert scb.should_ignore() is True
+
+    time.sleep(ttl_time + 2)
+    scb.retrieve_crawl_state()
+    scb = cls(sanitized_url=url)
+    scb.retrieve_crawl_state()
+    assert scb.is_url_page_downloaded() is True
+    assert scb.is_url_seen() is True
+    assert scb.should_ignore() is True
+
+    scb.db.flushdb()
+    cls.close_db_connection()

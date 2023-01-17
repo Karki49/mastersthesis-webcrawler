@@ -6,7 +6,7 @@ from os.path import join
 
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
 from crawlerapp.crawl_state.mongodb import MongoUrlCrawlState
-from crawlerapp.crawl_state.redis import RedisUrlCrawlState
+from crawlerapp.crawl_state.redisdb import RedisUrlCrawlState
 from crawlerapp.crawl_state.scylladb import ScyllaUrlCrawlState
 from data_generator.fake_urls import DEST_DIR
 

@@ -25,7 +25,7 @@ class SpiderSuperClass(scrapy.Spider):
             from crawlerapp.crawl_state.mongodb import MongoUrlCrawlState
             class_: UrlCrawlState = MongoUrlCrawlState
         elif self.url_crawl_state__classname == 'RedisUrlCrawlState':
-            from crawlerapp.crawl_state.redis import RedisUrlCrawlState
+            from crawlerapp.crawl_state.redisdb import RedisUrlCrawlState
             class_: UrlCrawlState = RedisUrlCrawlState
         elif self.url_crawl_state__classname == 'ScyllaUrlCrawlState':
             from crawlerapp.crawl_state.scylladb import ScyllaUrlCrawlState
