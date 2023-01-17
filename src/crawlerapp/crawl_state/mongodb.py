@@ -137,6 +137,7 @@ if __name__ == '__main__':
 
     ttl_time = 2
     cls = MongoUrlCrawlState
+    cls.DB_NAME = 'test'
     MongoUrlCrawlState.SEEN_TIME_THRESHOLD = ttl_time
     MongoUrlCrawlState.initialize_db_connection()
 
