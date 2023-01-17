@@ -132,6 +132,7 @@ class MongoUrlCrawlState(UrlCrawlState):
         return True
 
 if __name__ == '__main__':
+    import time
     cl = MongoClient(configs.CRAWL_STATE_BACKEND_MONGODB_URI)
 
     ttl_time = 2
@@ -143,7 +144,7 @@ if __name__ == '__main__':
     col.drop()
     col.create_index('url_hash', unique=True)
     col.create_index('ttl_field', expireAfterSeconds=ttl_time)
-    # col.insert_one({'url_hash':'hash1', 'dt': datetime.datetime.utcnow()})
+    time.sleep(5)
 
 
     url = 'https://aayushkarki/path/1'
@@ -164,7 +165,6 @@ if __name__ == '__main__':
     assert scb.is_url_page_downloaded() is False
     assert scb.should_ignore() is True
 
-    import time
     scb = MongoUrlCrawlState(sanitized_url=url)
     scb.retrieve_crawl_state()
     assert scb.is_url_seen() is True
