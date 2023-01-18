@@ -25,7 +25,7 @@ class MongoUrlCrawlState(UrlCrawlState):
     Eg:
     use all-hostnames;
     db['nytimes.com'].createIndex({"_id":1});
-    db['nytimes.com'].createIndex({"dt":1}, { expireAfterSeconds: 3600 });
+    db['nytimes.com'].createIndex({"ttl_field":1}, { expireAfterSeconds: 3600 });
 
     data structure:
     {
