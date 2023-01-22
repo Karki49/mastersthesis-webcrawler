@@ -15,17 +15,17 @@ from crawlerapp.crawl_state.interfaces import UrlCrawlState
 
 class ScyllaUrlCrawlState(UrlCrawlState):
     """
-        create keyspace spc1 with
+        create keyspace crawl_state_db with
             replication = {'class':'SimpleStrategy', 'replication_factor': 1} ;
 
-        create table IF NOT EXISTS spc1.alldomains(
+        create table IF NOT EXISTS crawl_state_db.alldomains(
             url_hash varchar PRIMARY KEY,
             status  tinyint,
             url     varchar
         );
     """
 
-    KEYSPACE: str = 'spc1'
+    KEYSPACE: str = 'crawl_state_db'
     tablename: str = 'alldomains'
     cluster: Cluster = None
 

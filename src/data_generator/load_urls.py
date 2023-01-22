@@ -58,7 +58,7 @@ def write_data_to_mongodb():
     print(uri)
     from pymongo import MongoClient, InsertOne
     cl = MongoClient(uri)
-    db = cl.thesisdb
+    db = cl.crawl_state_db
     for col_name in ('cnn', 'law360', 'nytimes', 'rottentomatoes'):
         db[col_name].drop()
         db[col_name].create_index('url_hash', unique=True)
@@ -88,7 +88,7 @@ def write_data_to_scylladb():
     from cassandra import ConsistencyLevel
     print("cluster nodes hosts ", configs.CRAWL_STATE_BACKEND_SCYLLADB_HOSTNAME_LIST)
     cluster = Cluster(configs.CRAWL_STATE_BACKEND_SCYLLADB_HOSTNAME_LIST, port=configs.CRAWL_STATE_BACKEND_SCYLLADB_PORT)
-    sess = cluster.connect('spc1')
+    sess = cluster.connect('crawl_state_db')
 
     insert_state = sess.prepare('INSERT INTO alldomains (url_hash,status,url) VALUES (?, ?, ?)')
     for path in source_urls_full_paths:
