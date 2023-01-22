@@ -1,9 +1,9 @@
 import datetime
 import logging
 
-ch = logging.StreamHandler()
-ch.setLevel(level=logging.INFO)
-ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'))
+# ch = logging.StreamHandler()
+# ch.setLevel(level=logging.INFO)
+# ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'))
 
 _dt = datetime.datetime.utcnow()
 fh = logging.FileHandler(filename=f'/tmp/crawler_{_dt.strftime("%Y-%m-%d_%Hh%Mm%Ss")}_UTC.log')
@@ -12,7 +12,7 @@ fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(fi
 
 logger = logging.getLogger('crawlerapp')
 logger.setLevel(level=logging.DEBUG)
-logger.addHandler(hdlr=ch)
+# logger.addHandler(hdlr=ch)
 logger.addHandler(hdlr=fh)
 
 

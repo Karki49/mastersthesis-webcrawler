@@ -35,6 +35,8 @@ class SpiderSuperClass(scrapy.Spider):
 
         self.url_crawl_state__class: UrlCrawlState = class_
         self.url_crawl_state__class.initialize_db_connection()
+        self.scraped_link_count = 0
+        self.fetched_pages_count = 0
 
     def start_requests(self):
         for url in self.start_urls:
@@ -54,17 +56,22 @@ class SpiderSuperClass(scrapy.Spider):
         return
 
     def parse(self, response: Request):
-        for link in self.crawl_lxml_link_extractor.extract_links(response=response):
-            yield Request(url=link.url, callback=self.parse)
+        self.fetched_pages_count += 1
+        if self.fetched_pages_count <= 400:
+            for link in self.crawl_lxml_link_extractor.extract_links(response=response):
+                yield Request(url=link.url, callback=self.parse)
 
         for link in self.scrape_lxml_link_extractor.extract_links(response=response):
+            self.scraped_link_count += 1
             self._process_scraped_url(link.url)
 
     @staticmethod
     def close(spider, reason):
         closed = getattr(spider, 'closed', None)
         url_crawl_state__class: UrlCrawlState = spider.url_crawl_state__class
-        logger.info(f'crawl state class is {url_crawl_state__class.__name__}')
+        logger.info(f'{spider.name} crawl state class is {url_crawl_state__class.__name__}')
+        logger.info(f'{spider.name} fetched_pages_count:{spider.fetched_pages_count}')
+        logger.info(f'{spider.name} scraped_link_count:{spider.scraped_link_count}')
         url_crawl_state__class.close_db_connection()
         logger.info('crawlstate db connection closed.')
         if callable(closed):
@@ -96,18 +103,24 @@ class NYTimesSpider(SpiderSuperClass):
 
     start_urls = [
         'https://www.nytimes.com/section/science',
-        'https://www.nytimes.com/section/business'
+        'https://www.nytimes.com/section/business',
+        'https://www.nytimes.com/section/books',
+        'https://www.nytimes.com/section/food',
+        'https://www.nytimes.com/section/realestate',
+        'https://www.nytimes.com/section/opinion',
     ]
 
     crawl_lxml_link_extractor = LxmlLinkExtractor(
         allow_domains=['nytimes.com'],
-        allow=['^https://.*/science/', '^https://.*/business/'],
+        allow=['^https://.*/science/', '^https://.*/business/',
+               '^https://.*/books/', '^https://.*/food/',
+               '^https://.*/realestate/', '^https://.*/opinion/'],
         deny=[r'\?', '^http:'],
         process_value=remove_fragments)
 
     scrape_lxml_link_extractor = LxmlLinkExtractor(
         allow_domains=['nytimes.com'],
-        allow=[r'^https://.*/2023/\d\d/\d\d/science/', r'^https://.*/2022/\d\d/\d\d/business/'],
+        allow=[r'https://'],
         deny=[r'\?', '^http:'],
         process_value=sanitize_url)
 
@@ -116,18 +129,20 @@ class CnnSpider(SpiderSuperClass):
     name = "cnn"
 
     start_urls = [
-        'https://edition.cnn.com/world'
+        'https://edition.cnn.com/world',
+        'https://edition.cnn.com/world/americas',
+        'https://edition.cnn.com/world/middle-east'
     ]
 
     crawl_lxml_link_extractor = LxmlLinkExtractor(
         allow_domains=['cnn.com'],
-        allow=['^https://.*/world/'],
+        allow=['^https://.*/2023/'],
         deny=[r'\?', '^http:'],
         process_value=remove_fragments)
 
     scrape_lxml_link_extractor = LxmlLinkExtractor(
         allow_domains=['cnn.com'],
-        allow=[r'^https://.*/202\d/'],
+        allow=[r'https://', r'^https://.*/202\d/', r'^https://.*/201\d/'],
         deny=[r'\?', '^http:'],
         process_value=sanitize_url)
 

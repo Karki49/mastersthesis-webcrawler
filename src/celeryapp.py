@@ -3,6 +3,8 @@ from kombu import Queue
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
+from crawlerapp import logger
+
 q_args = {
     # 'x-message-ttl': 15000,
 }
@@ -31,18 +33,22 @@ def test_function():
 
 @app.task(queue=crawl_job_q.name)
 def start_spider(spider_name: str, url_crawl_state_classname:str):
+    logger.info(f"spider:{spider_name} started")
     c = CrawlerProcess(settings=get_project_settings())
     kw = {'urlCrawlState__Classname': url_crawl_state_classname}
     c.crawl(spider_name, **kw)
     c.start()
     c.stop()
+    logger.info(f"spider:{spider_name} finished")
 
 
 if __name__ == '__main__':
-    from crawlerapp.spiders.testspider import Law360Spider
+    from crawlerapp.spiders.testspider import Law360Spider, NYTimesSpider, CnnSpider, RottenTomatoesSpider
 
-    # start_spider.delay(spider_name=SimpleTestSpider1.name)
-    start_spider(spider_name=Law360Spider.name, url_crawl_state_classname='MongoUrlCrawlState')
+    url_crawl_state_classname_list = ('RedisUrlCrawlState', 'MongoUrlCrawlState', 'ScyllaUrlCrawlState')
+    # for spider in (Law360Spider, NYTimesSpider, CnnSpider, RottenTomatoesSpider):
+    for spider in (Law360Spider, NYTimesSpider, CnnSpider, RottenTomatoesSpider):
+        start_spider.delay(spider_name=spider.name, url_crawl_state_classname=url_crawl_state_classname_list[0])
 
     print("crawl tasks sent to queue")
 
