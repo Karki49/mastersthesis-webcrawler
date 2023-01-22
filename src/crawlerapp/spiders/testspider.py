@@ -2,6 +2,7 @@ import scrapy
 from scrapy import Request
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
 
+from celeryapp import page_etl
 from crawlerapp import logger
 from crawlerapp.crawl_state.interfaces import UrlCrawlState
 from crawlerapp.utility.urls import remove_fragments
@@ -47,22 +48,25 @@ class SpiderSuperClass(scrapy.Spider):
         if url in self.scrape_links_seen:
             return
 
+        self.scraped_link_count += 1
         self.scrape_links_seen.add(url)
         crawl_state = self.url_crawl_state__class(sanitized_url=url)
         crawl_state.retrieve_crawl_state()
         if not crawl_state.should_ignore():
             crawl_state.flag_seen()
+            page_etl.delay(sanitized_url, self.url_crawl_state__classname)
             # TODO: Send to celery
         return
 
     def parse(self, response: Request):
         self.fetched_pages_count += 1
-        if self.fetched_pages_count <= 400:
-            for link in self.crawl_lxml_link_extractor.extract_links(response=response):
-                yield Request(url=link.url, callback=self.parse)
+        if self.fetched_pages_count > 100 or self.scraped_link_count > 3000:
+            return
+
+        for link in self.crawl_lxml_link_extractor.extract_links(response=response):
+            yield Request(url=link.url, callback=self.parse)
 
         for link in self.scrape_lxml_link_extractor.extract_links(response=response):
-            self.scraped_link_count += 1
             self._process_scraped_url(link.url)
 
     @staticmethod
@@ -82,7 +86,9 @@ class Law360Spider(SpiderSuperClass):
     name = "law360"
 
     start_urls = [
-        'https://www.law360.com/industries/specialized-health-services/articles'
+        'https://www.law360.com/whitecollar',
+        'https://www.law360.com/bankruptcy',
+        'https://www.law360.com/access-to-justice'
     ]
 
     crawl_lxml_link_extractor = LxmlLinkExtractor(

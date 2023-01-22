@@ -4,6 +4,7 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
 from crawlerapp import logger
+from crawlerapp.etl.page_etl import simulate_etl
 
 q_args = {
     # 'x-message-ttl': 15000,
@@ -13,17 +14,13 @@ kw = {
     'queue_arguments': q_args}
 
 crawl_job_q = Queue(name='crawl_job_q', **kw)
+page_etl_q = Queue(name='etl_job_q', **kw)
 results_q = Queue(name='results_backend_q', **kw)
 
 app = Celery('celeryapp',
              # backend='rpc://',
              backend=None,
              broker='pyamqp://guest:guest@localhost//')
-
-# download_page_q = Queue(name='q6', **kw)
-# app.conf.task_queues = (
-#     crawl_job_q,
-# )
 
 
 @app.task(queue=crawl_job_q.name)
@@ -42,11 +39,15 @@ def start_spider(spider_name: str, url_crawl_state_classname:str):
     logger.info(f"spider:{spider_name} finished")
 
 
+@app.task(queue=page_etl_q.name)
+def page_etl(sanitized_url: str, url_crawl_state_classname: str) -> None:
+    simulate_etl(sanitized_url=sanitized_url, UrlCrawlState__class_name=url_crawl_state_classname)
+
+
 if __name__ == '__main__':
     from crawlerapp.spiders.testspider import Law360Spider, NYTimesSpider, CnnSpider, RottenTomatoesSpider
 
     url_crawl_state_classname_list = ('RedisUrlCrawlState', 'MongoUrlCrawlState', 'ScyllaUrlCrawlState')
-    # for spider in (Law360Spider, NYTimesSpider, CnnSpider, RottenTomatoesSpider):
     for spider in (Law360Spider, NYTimesSpider, CnnSpider, RottenTomatoesSpider):
         start_spider.delay(spider_name=spider.name, url_crawl_state_classname=url_crawl_state_classname_list[0])
 
