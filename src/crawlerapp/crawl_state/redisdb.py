@@ -39,7 +39,7 @@ class RedisUrlCrawlState(UrlCrawlState):
     def retrieve_crawl_state(self):
         with Interval() as dt:
             state_json: str = self.db.get(self.url_hash)
-        logger.info(f'read milliseconds: {dt.milisecs}')
+        logger.info(f'read microseconds: {dt.microsecs}')
         if state_json:
             self.state = json.loads(state_json)
         else:
@@ -59,13 +59,13 @@ class RedisUrlCrawlState(UrlCrawlState):
         self.state['status'] = self.SEEN_FLAG
         with Interval() as dt:
             self.db.set(name=self.url_hash, value=json.dumps(self.state), ex=self.SEEN_TIME_THRESHOLD)
-        logger.info(f'write insert milliseconds: {dt.milisecs}')
+        logger.info(f'write insert microseconds: {dt.microsecs}')
 
     def flag_url_page_downloaded(self) -> None:
         self.state['status'] = self.PAGE_DOWNLOADED_FLAG
         with Interval() as dt:
             self.db.set(name=self.url_hash, value=json.dumps(self.state), ex=None)
-        logger.info(f'write insert milliseconds: {dt.milisecs}')
+        logger.info(f'write insert microseconds: {dt.microsecs}')
 
     def _url_seen_with_time_span(self):
         return True

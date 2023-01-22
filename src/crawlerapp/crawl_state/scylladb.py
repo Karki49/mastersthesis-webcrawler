@@ -56,7 +56,7 @@ class ScyllaUrlCrawlState(UrlCrawlState):
         query = f"select status from {self.tablename} where url_hash='{self.url_hash}'"
         with Interval() as dt:
             one_row = self.session.execute(query).one()
-        logger.info(f'read milliseconds: {dt.milisecs}')
+        logger.info(f'read microseconds: {dt.microsecs}')
         if one_row is None:
             self.state = dict(url_hash=self.url_hash, status=None, url=self.sanitized_url)
             self.__is_state_in_db = False
@@ -94,13 +94,13 @@ class ScyllaUrlCrawlState(UrlCrawlState):
             batch.add(first_statement)
             with Interval() as dt:
                 self.session.execute(batch)
-            logger.info(f'write insert milliseconds: {dt.milisecs}')
+            logger.info(f'write insert microseconds: {dt.microsecs}')
         else:
             query = f"update {self.tablename} USING TTL {self.SEEN_TIME_THRESHOLD} " \
                     f"set status={self.SEEN_FLAG} where url_hash='{self.url_hash}';"
             with Interval() as dt:
                 self.session.execute(query)
-            logger.info(f'write update milliseconds: {dt.milisecs}')
+            logger.info(f'write update microseconds: {dt.microsecs}')
         self.state['status'] = self.SEEN_FLAG
         self.__is_state_in_db = True
 
@@ -110,13 +110,13 @@ class ScyllaUrlCrawlState(UrlCrawlState):
                     f"VALUES ('{self.url_hash}', {self.PAGE_DOWNLOADED_FLAG}, '{self.sanitized_url}'); "
             with Interval() as dt:
                 self.session.execute(query)
-            logger.info(f'write insert milliseconds: {dt.milisecs}')
+            logger.info(f'write insert microseconds: {dt.microsecs}')
         else:
             query = f"update {self.tablename} " \
                     f"set status={self.PAGE_DOWNLOADED_FLAG} where url_hash='{self.url_hash}';"
             with Interval() as dt:
                 self.session.execute(query)
-            logger.info(f'write update milliseconds: {dt.milisecs}')
+            logger.info(f'write update microseconds: {dt.microsecs}')
 
         self.state['status'] = self.PAGE_DOWNLOADED_FLAG
         self.__is_state_in_db = True

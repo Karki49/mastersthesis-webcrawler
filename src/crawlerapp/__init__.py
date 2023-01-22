@@ -19,7 +19,7 @@ logger.addHandler(hdlr=fh)
 class Interval:
     def __init__(self):
         self.secs: float = None
-        self.milisecs: float = None
+        self.microsecs: float = None
         self.__t1 = None
 
     def __enter__(self):
@@ -29,7 +29,7 @@ class Interval:
     def __exit__(self, *args):
         t2 = datetime.datetime.now()
         self.secs = (t2 - self.__t1).total_seconds()
-        self.milisecs = self.secs * 1000
+        self.microsecs = int(self.secs * 1000 * 1000)  # rounded off to the nearest micro second
 
 
 if __name__ == '__main__':

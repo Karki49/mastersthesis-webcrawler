@@ -73,7 +73,7 @@ class MongoUrlCrawlState(UrlCrawlState):
     def retrieve_crawl_state(self) -> None:
         with Interval() as dt:
             dict_ = self.db_client[self.collection_name].find_one({"url_hash": self.url_hash}, {"_id": False, "status":True})
-        logger.info(f'read milliseconds: {dt.milisecs}')
+        logger.info(f'read microseconds: {dt.microsecs}')
         if dict_:
             self.state = dict(url_hash=self.url_hash, url=self.sanitized_url, status=dict_.get('status'))
             self.__is_state_in_db: bool = True
@@ -104,7 +104,7 @@ class MongoUrlCrawlState(UrlCrawlState):
                 new_state = self.state | dict(status=target_status, ttl_field=datetime.datetime.utcnow())
             with Interval() as dt:
                 self.db_client[self.collection_name].insert_one(new_state)
-            logger.info(f'write insert milliseconds: {dt.milisecs}')
+            logger.info(f'write insert microseconds: {dt.microsecs}')
             self.state = new_state
         else:
             filter_ = {'url_hash': self.url_hash}
@@ -115,7 +115,7 @@ class MongoUrlCrawlState(UrlCrawlState):
             with Interval() as dt:
                 self.db_client[self.collection_name].update_one(filter=filter_,
                                                                 update=update_)
-            logger.info(f'write update milliseconds: {dt.milisecs}')
+            logger.info(f'write update microseconds: {dt.microsecs}')
             self.state['status'] = target_status
         self.__is_state_in_db = True
 
