@@ -58,6 +58,6 @@ if __name__ == '__main__':
     time.sleep(5)
 
     for spider in (Law360Spider, NYTimesSpider, CnnSpider, RottenTomatoesSpider):
-        start_spider.delay(spider_name=spider.name, url_crawl_state_classname=url_crawl_state_classname_list[0])
+        start_spider.delay(spider_name=spider.name, url_crawl_state_classname=url_crawl_state_db)
 
     print("crawl tasks sent.")
