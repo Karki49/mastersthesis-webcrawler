@@ -3,6 +3,7 @@ from kombu import Queue
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
+from configs import RMQ_URI
 from crawlerapp import logger
 from crawlerapp.etl.page_etl import simulate_etl
 
@@ -20,7 +21,7 @@ results_q = Queue(name='results_backend_q', **kw)
 app = Celery('celeryapp',
              # backend='rpc://',
              backend=None,
-             broker='pyamqp://guest:guest@localhost//')
+             broker=RMQ_URI)
 
 
 @app.task(queue=crawl_job_q.name)
