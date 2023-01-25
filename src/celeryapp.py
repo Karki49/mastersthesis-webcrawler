@@ -45,11 +45,18 @@ def page_etl(sanitized_url: str, url_crawl_state_classname: str) -> None:
 
 
 if __name__ == '__main__':
+    import sys
+    import time
     from crawlerapp.spiders.testspider import Law360Spider, NYTimesSpider, CnnSpider, RottenTomatoesSpider
 
     url_crawl_state_classname_list = ('RedisUrlCrawlState', 'MongoUrlCrawlState', 'ScyllaUrlCrawlState')
+    url_crawl_state_db = sys.argv[1]
+    assert url_crawl_state_db in url_crawl_state_classname_list
+
+    print(f"Using class:{url_crawl_state_db}, sending crawl job tasks in 5 seconds...")
+    time.sleep(5)
+
     for spider in (Law360Spider, NYTimesSpider, CnnSpider, RottenTomatoesSpider):
         start_spider.delay(spider_name=spider.name, url_crawl_state_classname=url_crawl_state_classname_list[0])
 
-    print("crawl tasks sent to queue")
-
+    print("crawl tasks sent.")
