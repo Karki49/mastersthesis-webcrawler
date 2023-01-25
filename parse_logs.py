@@ -15,7 +15,7 @@ def get_stats(path):
             write_log = re.search(fr'write.*microseconds: (.*)', line)
             if write_log:
                 microsecs = int(float(write_log.group(1)))
-                read_duration_list.append(microsecs)
+                write_duration_list.append(microsecs)
                 sum_['write'] += microsecs
                 count_['write'] += 1
                 max_['write'] = max(max_['write'], microsecs)
@@ -24,7 +24,7 @@ def get_stats(path):
             read_log = re.search(fr'read.*microseconds: (.*)', line)
             if read_log:
                 microsecs = int(float(read_log.group(1)))
-                write_duration_list.append(microsecs)
+                read_duration_list.append(microsecs)
                 sum_['read'] += microsecs
                 count_['read'] += 1
                 max_['read'] = max(max_['read'], microsecs)
